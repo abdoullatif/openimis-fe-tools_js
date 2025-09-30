@@ -364,6 +364,7 @@ const ExtractsPage = (props) => {
               </Grid>
             </Block>
           </Grid>
+          {/**
           <Grid item xs={4}>
             <OfficerDownloadBlock />
           </Grid>
@@ -379,6 +380,7 @@ const ExtractsPage = (props) => {
           <Grid item xs={4}>
             <RenewalsUploadBlock />
           </Grid>
+          */}
         </Grid>
       </Box>
     </>

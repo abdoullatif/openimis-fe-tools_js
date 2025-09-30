@@ -308,6 +308,7 @@ const RegistersPage = () => {
       )}
       <Box fullWidth m={2}>
         <Grid container spacing={2}>
+          {/**
           {hasRights(RIGHT_REGISTERS_DIAGNOSES) && (
             <Grid item xs={4}>
               <Block title={formatMessage("diagnosesBlockTitle")}>
@@ -434,7 +435,7 @@ const RegistersPage = () => {
                 </Grid>
               </Block>
             </Grid>
-          )}
+          )}**/}
           {hasRights(RIGHT_REGISTERS_LOCATIONS) && (
             <Grid item xs={4}>
               <Block title={formatMessage("locationsBlockTitle")}>
@@ -569,6 +570,7 @@ const RegistersPage = () => {
               </Block>
             </Grid>
           )}
+          {/*
           {hasRights(RIGHT_REGISTERS_HEALTH_FACILITIES) && (
             <Grid item xs={4}>
               <Block title={formatMessage("healthFacilitiesBlockTitle")}>
@@ -793,7 +795,7 @@ const RegistersPage = () => {
                             type="file"
                           />
                         </Grid>
-                        {/* The strategy picker + the dry run box are useless when uploading all formats other than XML. The code should be refactored to display them/take them into account only if the provided file is an XML file. */}
+                        // The strategy picker + the dry run box are useless when uploading all formats other than XML. The code should be refactored to display them/take them into account only if the provided file is an XML file. /
                         <Grid item>
                           <ConstantBasedPicker
                             module="tools"
@@ -876,6 +878,7 @@ const RegistersPage = () => {
               </Block>
             </Grid>
           )}
+
           {hasRights(RIGHT_REGISTERS_SERVICES) && (
             <Grid item xs={4}>
               <Block title={formatMessage("servicesBlockTitle")}>
@@ -943,7 +946,7 @@ const RegistersPage = () => {
                             type="file"
                           />
                         </Grid>
-                        {/* The strategy picker + the dry run box are useless when uploading all formats other than XML. The code should be refactored to display them/take them into account only if the provided file is an XML file. */}
+                        // The strategy picker + the dry run box are useless when uploading all formats other than XML. The code should be refactored to display them/take them into account only if the provided file is an XML file.
                         <Grid item>
                           <ConstantBasedPicker
                             module="tools"
@@ -1032,7 +1035,7 @@ const RegistersPage = () => {
                 </Grid>
               </Block>
             </Grid>
-          )}
+          )}*/}
         </Grid>
       </Box>
     </>
