@@ -1,4 +1,4 @@
-import { useGraphqlMutation, useGraphqlQuery } from "@openimis/fe-core";
+import { useGraphqlMutation, useGraphqlQuery, baseApiUrl, apiHeaders } from "@openimis/fe-core";
 
 export const useReportsQuery = (config) => {
   const { isLoading, error, data, refetch } = useGraphqlQuery(
@@ -19,7 +19,7 @@ export const useReportsQuery = (config) => {
 export const useReportQuery = ({ name }, config) => {
   const { isLoading, error, data, refetch } = useGraphqlQuery(
     `
-  query useReportQuery ($name: String!) { 
+  query useReportQuery ($name: String!) {
     report(
       name: $name) {
         name
@@ -41,7 +41,7 @@ export const useOverrideReportMutation = () => {
     `
     mutation useOverrideReportMutation($input: OverrideReportMutationInput!) {
       overrideReport(input: $input) {
-        internalId  
+        internalId
         clientMutationId
       }
     }

@@ -36,6 +36,7 @@ export const EXPORT_TYPE_XML = "xml";
 
 export const INSUREES_TYPE = "insurees";
 export const LOCATIONS_TYPE = "locations";
+export const USERS_TYPE = "users";
 export const DIAGNOSIS_TYPE = "diagnosis";
 export const HF_TYPE = "hf";
 export const ITEMS_TYPE = "items";
