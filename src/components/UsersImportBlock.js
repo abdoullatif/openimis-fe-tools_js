@@ -93,7 +93,7 @@ export default function UsersImportBlock({ formatMessage, REGISTERS_URL, onSubmi
                   }
                 />
               }
-              label={formatMessage("dryRunLabel")}
+              label={formatMessage("users.dryRunLabel")}
             />
           </Grid>
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { connect } from "react-redux";
+import { injectIntl } from "react-intl";
 
 import {
   Box,
@@ -17,13 +18,14 @@ import {
 } from "@material-ui/core";
 
 import {
-  useTranslations,
+  formatMessage,
   ConstantBasedPicker,
   baseApiUrl,
   ProgressOrError,
   apiHeaders,
 } from "@openimis/fe-core";
 import Block from "../components/Block";
+import SereImportBlock from "../components/SereImportBlock";
 import Uploader from "../components/Uploader";
 import {
   STRATEGY_INSERT,
@@ -84,10 +86,21 @@ const INSUREE_EXPORT_TYPES = [
   EXPORT_TYPE_XLSX,
 ];
 
-const RegistersPage = () => {
-  const { formatMessage } = useTranslations("tools.RegistersPage");
+/** API may return right ids as strings; constants are numbers. */
+function normalizeRightsIds(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((r) => {
+    if (typeof r === "string") {
+      const n = parseInt(r, 10);
+      return Number.isNaN(n) ? r : n;
+    }
+    return r;
+  });
+}
+
+const RegistersPage = ({ intl, rights }) => {
+  const formatPageMessage = (id) => formatMessage(intl, "tools.RegistersPage", id);
   const [forms, setForms] = useState({});
-  const rights = useSelector((state) => state.core?.user?.i_user?.rights ?? []);
   const [dialogState, setDialogState] = useState({});
   const [popupState, setPopupState] = useState({});
   const REGISTERS_URL = `${baseApiUrl}/tools/registers`;
@@ -95,8 +108,6 @@ const RegistersPage = () => {
   const IMPORTS_URL = `${baseApiUrl}/tools/imports`;
   const INSUREES_IMPORT_URL = `${baseApiUrl}/im_export/imports`;
   const INSUREES_EXPORT_URL = `${baseApiUrl}/im_export/exports`;
-
-  const [userFile, setUserFile] = useState(null);
 
   const hasRights = (rightsList) => rightsList.every((x) => rights.includes(x));
 
@@ -212,8 +223,6 @@ const RegistersPage = () => {
         return;
       }
 
-      console.log('payload', payload);
-
       setDialogState({
         open: true,
         isLoading: false,
@@ -229,18 +238,17 @@ const RegistersPage = () => {
         data: null,
         generalError:
           error?.message ??
-          formatMessage(
+          formatPageMessage(
             `An error occurred. Please contact your administrator. ${error?.message}`
           ),
       });
     }
   };
-  console.log("TOOLS RENDERING")
   return (
     <>
       {dialogState?.open && (
         <Dialog open onClose={onDialogClose} fullWidth maxWidth="sm">
-          <DialogTitle>{formatMessage("UploadDialog.title")}</DialogTitle>
+          <DialogTitle>{formatPageMessage("UploadDialog.title")}</DialogTitle>
           <DialogContent>
             <ProgressOrError progress={dialogState.isLoading} />
             {dialogState.generalError && (
@@ -251,54 +259,54 @@ const RegistersPage = () => {
                 <Box my={1}>
                   <b>Status:</b>
                   {dialogState.success
-                    ? formatMessage("UploadDialog.success")
-                    : formatMessage("UploadDialog.failure")}
+                    ? formatPageMessage("UploadDialog.success")
+                    : formatPageMessage("UploadDialog.failure")}
                 </Box>
                 {"sent" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.sent")}</b>
+                    <b>{formatPageMessage("UploadDialog.sent")}</b>
                     {dialogState.data.sent}
                   </Box>
                 )}
                 {"created" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.created")}</b>
+                    <b>{formatPageMessage("UploadDialog.created")}</b>
                     {dialogState.data.created}
                   </Box>
                 )}
                 {"updated" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.updated")}</b>
+                    <b>{formatPageMessage("UploadDialog.updated")}</b>
                     {dialogState.data.updated}
                   </Box>
                 )}
                 {"deleted" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.deleted")}</b>
+                    <b>{formatPageMessage("UploadDialog.deleted")}</b>
                     {dialogState.data.deleted}
                   </Box>
                 )}
                 {"skipped" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.skipped")}</b>
+                    <b>{formatPageMessage("UploadDialog.skipped")}</b>
                     {dialogState.data.skipped}
                   </Box>
                 )}
                 {"invalid" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.invalid")}</b>
+                    <b>{formatPageMessage("UploadDialog.invalid")}</b>
                     {dialogState.data.invalid}
                   </Box>
                 )}
                 {"failed" in dialogState.data && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.failed")}</b>
+                    <b>{formatPageMessage("UploadDialog.failed")}</b>
                     {dialogState.data.failed}
                   </Box>
                 )}
                 {dialogState.uploadErrors?.length > 0 && (
                   <Box my={1}>
-                    <b>{formatMessage("UploadDialog.errors")}</b>
+                    <b>{formatPageMessage("UploadDialog.errors")}</b>
                     {dialogState.uploadErrors.join(", ")}
                   </Box>
                 )}
@@ -311,7 +319,7 @@ const RegistersPage = () => {
               onClick={onDialogClose}
               variant="primary"
             >
-              {formatMessage("UploadDialog.okButton")}
+              {formatPageMessage("UploadDialog.okButton")}
             </Button>
           </DialogActions>
         </Dialog>
@@ -319,16 +327,17 @@ const RegistersPage = () => {
       <Box fullWidth m={2}>
         <Grid container spacing={2}>
           <UsersImportBlock
-            formatMessage={formatMessage}
+            formatMessage={formatPageMessage}
             REGISTERS_URL={REGISTERS_URL}
             onSubmit={onSubmit}
             USERS_TYPE={USERS_TYPE}
             USERS_STRATEGIES={USERS_STRATEGIES}
             handleFieldChange={handleFieldChange}
           />
+          <SereImportBlock formatMessage={formatPageMessage} />
           {hasRights(RIGHT_REGISTERS_LOCATIONS) && (
             <Grid item xs={4}>
-              <Block title={formatMessage("locationsBlockTitle")}>
+              <Block title={formatPageMessage("locationsBlockTitle")}>
                 <Grid container spacing={2} direction="column">
                   <Grid item>
                     <Button
@@ -339,7 +348,7 @@ const RegistersPage = () => {
                         EXPORT_TYPE_XML
                       )}
                     >
-                      {formatMessage("downloadBtn")}
+                      {formatPageMessage("downloadBtn")}
                     </Button>
                   </Grid>
                   <Grid item>
@@ -347,7 +356,7 @@ const RegistersPage = () => {
                   </Grid>
                   <Grid item>
                     <Typography variant="h6">
-                      {formatMessage("locations.uploadLabel")}
+                      {formatPageMessage("locations.uploadLabel")}
                     </Typography>
                   </Grid>
                   <Grid item>
@@ -388,7 +397,7 @@ const RegistersPage = () => {
                         </Grid>
                         <Grid item>
                           <FormControlLabel
-                            label={formatMessage("dryRunLabel")}
+                            label={formatPageMessage("dryRunLabel")}
                             control={
                               <Checkbox
                                 checked={forms.locations?.dryRun}
@@ -415,7 +424,7 @@ const RegistersPage = () => {
                               )
                             }
                           >
-                            {formatMessage("uploadBtn")}
+                            {formatPageMessage("uploadBtn")}
                           </Button>
                           {popupState?.open && popupState?.openLocations && (
                             <Dialog
@@ -425,7 +434,7 @@ const RegistersPage = () => {
                               maxWidth="sm"
                             >
                               <DialogTitle>
-                                {formatMessage("UploadDialog.confirmLocations")}
+                                {formatPageMessage("UploadDialog.confirmLocations")}
                               </DialogTitle>
                               <DialogActions>
                                 <Button
@@ -441,13 +450,13 @@ const RegistersPage = () => {
                                     )
                                   }
                                 >
-                                  {formatMessage("uploadBtn")}
+                                  {formatPageMessage("uploadBtn")}
                                 </Button>
                                 <Button
                                   onClick={onPopupClose}
                                   variant="contained"
                                 >
-                                  {formatMessage("cancelBtn")}
+                                  {formatPageMessage("cancelBtn")}
                                 </Button>
                               </DialogActions>
                             </Dialog>
@@ -466,4 +475,8 @@ const RegistersPage = () => {
   );
 };
 
-export default RegistersPage;
+const mapStateToProps = (state) => ({
+  rights: normalizeRightsIds(state.core?.user?.i_user?.rights ?? []),
+});
+
+export default connect(mapStateToProps)(injectIntl(RegistersPage));

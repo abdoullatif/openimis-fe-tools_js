@@ -1,5 +1,4 @@
 import React from "react";
-import { FormattedMessage } from '@openimis/fe-core';
 import {Ballot, ImportExport, SaveAlt} from "@material-ui/icons";
 import ToolsMainMenu from "./components/ToolsMainMenu";
 import RegistersPage from "./pages/RegistersPage";
@@ -11,6 +10,7 @@ import { EmailSettingsPage } from "./pages/EmailSettingsPage";
 import ReportsPage from "./pages/ReportsPage";
 
 import messages_en from "./translations/en.json";
+import messages_fr from "./translations/fr.json";
 import ReportDefinitionEditorDialog from "./components/ReportDefinitionEditorDialog";
 import ReportPicker from "./components/ReportPicker";
 import { RIGHT_REGISTERS, RIGHT_REPORTS, RIGHT_EXTRACTS } from "./constants";
@@ -24,7 +24,10 @@ function enablers(rights, enablers) {
 };
 
 const DEFAULT_CONFIG = {
-  "translations": [{ key: "en", messages: messages_en }],
+  "translations": [
+    { key: "en", messages: messages_en },
+    { key: "fr", messages: messages_fr },
+  ],
   "refs": [
     { key: "tools.reports", ref: "tools/reports" },
     { key: "tools.ReportDefinitionEditorDialog", ref: ReportDefinitionEditorDialog },
@@ -42,21 +45,21 @@ const DEFAULT_CONFIG = {
   "core.MainMenu": [{ name: 'ToolsMainMenu', component: ToolsMainMenu }],
   "tools.MainMenu": [
     {
-      text: <FormattedMessage module="tools" id="menu.registers" />,
+      text: { module: "tools", id: "menu.registers" },
       icon: <ImportExport />,
       route: "/tools/registers",
       id: "tools.registers",
       filter: (rights) => enablers(rights, RIGHT_REGISTERS),
     },
     {
-      text: <FormattedMessage module="tools" id="menu.extracts" />,
+      text: { module: "tools", id: "menu.extracts" },
       icon: <SaveAlt />,
       route: "/tools/extracts",
       id: "tools.extracts",
       filter: (rights) => enablers(rights, RIGHT_EXTRACTS),
     },
     {
-      text: <FormattedMessage module="tools" id="menu.reports" />,
+      text: { module: "tools", id: "menu.reports" },
       icon: <Ballot />,
       route: "/tools/reports",
       id: "tools.reports",
