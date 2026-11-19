@@ -21,6 +21,7 @@ import { baseApiUrl, ProgressOrError, apiHeaders, ConstantBasedPicker } from "@o
 import Block from "./Block";
 
 const IMPORT_URL = `${baseApiUrl}/productive_inclusion/import/`;
+const RESET_URL = `${baseApiUrl}/productive_inclusion/reset/`;
 const TEMPLATE_URL = `${baseApiUrl}/productive_inclusion/import_template/`;
 const TEMPLATE_URL_ALT = `${baseApiUrl}/productive_inclusion/import_template`;
 
@@ -98,6 +99,14 @@ const EMPTY_IMPORT_COUNTERS = {
   activityRowsUpdated: null,
   activityRowsUnchanged: null,
   activityRowsSkipped: null,
+  presencesCreated: null,
+  presencesDeletedImport: null,
+  presencesUnchanged: null,
+  membersStatusUpdated: null,
+  membersStatusUnchanged: null,
+  beneficiariesSuspended: null,
+  beneficiariesReactivated: null,
+  beneficiariesUnmatched: null,
 };
 
 /** Compteurs alignés sur la réponse REST productive_inclusion/import (snake_case + camelCase). */
@@ -167,10 +176,52 @@ function parseImportCounters(payload) {
       "activity_rows_skipped",
       "activityRowsSkipped",
     ),
+    presencesCreated: pickNumber(
+      payload,
+      "presences_created",
+      "presencesCreated",
+    ),
+    presencesDeletedImport: pickNumber(
+      payload,
+      "presences_deleted",
+      "presencesDeleted",
+    ),
+    presencesUnchanged: pickNumber(
+      payload,
+      "presences_unchanged",
+      "presencesUnchanged",
+    ),
+    membersStatusUpdated: pickNumber(
+      payload,
+      "members_status_updated",
+      "membersStatusUpdated",
+    ),
+    membersStatusUnchanged: pickNumber(
+      payload,
+      "members_status_unchanged",
+      "membersStatusUnchanged",
+    ),
+    beneficiariesSuspended: pickNumber(
+      payload,
+      "beneficiaries_suspended",
+      "beneficiariesSuspended",
+    ),
+    beneficiariesReactivated: pickNumber(
+      payload,
+      "beneficiaries_reactivated",
+      "beneficiariesReactivated",
+    ),
+    beneficiariesUnmatched: pickNumber(
+      payload,
+      "beneficiaries_unmatched",
+      "beneficiariesUnmatched",
+    ),
   };
 }
 
-export default class SereImportBlock extends Component {
+class SereImportBlock extends Component {
+  fileInputRef = React.createRef();
+
   state = {
     file: null,
     loading: false,
@@ -179,12 +230,106 @@ export default class SereImportBlock extends Component {
     dryRun: false,
     dialogState: { open: false },
     inlineError: null,
+    resetConfirmOpen: false,
+    resetLoading: false,
   };
 
   translate = (id) => this.props.formatMessage(`sereImport.${id}`);
 
   closeDialog = () => {
     this.setState({ dialogState: { open: false } });
+  };
+
+  openResetConfirm = () => {
+    this.setState({ resetConfirmOpen: true, inlineError: null });
+  };
+
+  closeResetConfirm = () => {
+    if (this.state.resetLoading) return;
+    this.setState({ resetConfirmOpen: false });
+  };
+
+  clearFormFields = () => {
+    if (this.fileInputRef.current) {
+      this.fileInputRef.current.value = "";
+    }
+    this.setState({
+      file: null,
+      strategy: null,
+      dryRun: false,
+      inlineError: null,
+    });
+  };
+
+  onConfirmReset = async () => {
+    this.setState({ resetLoading: true, inlineError: null });
+
+    try {
+      const headers = { ...(apiHeaders || {}) };
+      delete headers["Content-Type"];
+      delete headers["content-type"];
+
+      const response = await fetch(RESET_URL, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          ...headers,
+          Accept: "application/json",
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.status === 403) {
+        this.setState({
+          resetLoading: false,
+          resetConfirmOpen: false,
+          inlineError: this.translate("resetForbidden"),
+        });
+        return;
+      }
+
+      if (!response.ok || payload.success === false) {
+        const message =
+          payload.error
+          || payload.detail
+          || this.translate("resetFailed");
+        this.setState({
+          resetLoading: false,
+          resetConfirmOpen: false,
+          inlineError: typeof message === "string" ? message : JSON.stringify(message),
+        });
+        return;
+      }
+
+      this.clearFormFields();
+      this.setState({
+        resetLoading: false,
+        resetConfirmOpen: false,
+        dialogState: {
+          open: true,
+          isLoading: false,
+          success: true,
+          dryRun: false,
+          strategy: null,
+          ...EMPTY_IMPORT_COUNTERS,
+          groupsDeleted: pickNumber(payload, "groups_deleted", "groupsDeleted") ?? 0,
+          membersDeleted: pickNumber(payload, "members_deleted", "membersDeleted") ?? 0,
+          activitiesDeleted: pickNumber(payload, "activities_deleted", "activitiesDeleted") ?? 0,
+          presencesDeleted: pickNumber(payload, "presences_deleted", "presencesDeleted") ?? 0,
+          isResetResult: true,
+          warnings: [],
+          errors: null,
+          generalError: null,
+        },
+      });
+    } catch (error) {
+      this.setState({
+        resetLoading: false,
+        resetConfirmOpen: false,
+        inlineError: error?.message || this.translate("resetFailed"),
+      });
+    }
   };
 
   onDownloadTemplate = async () => {
@@ -418,7 +563,51 @@ export default class SereImportBlock extends Component {
         ["activityRowsUnchanged", dialogState.activityRowsUnchanged],
         ["activityRowsSkipped", dialogState.activityRowsSkipped],
       ])}
+      {this.renderImportSection("sectionPresences", [
+        ["presencesCreated", dialogState.presencesCreated],
+        ["presencesDeletedImport", dialogState.presencesDeletedImport],
+        ["presencesUnchanged", dialogState.presencesUnchanged],
+      ])}
+      {this.renderImportSection("sectionEligibility", [
+        ["membersStatusUpdated", dialogState.membersStatusUpdated],
+        ["membersStatusUnchanged", dialogState.membersStatusUnchanged],
+        ["beneficiariesSuspended", dialogState.beneficiariesSuspended],
+        ["beneficiariesReactivated", dialogState.beneficiariesReactivated],
+        ["beneficiariesUnmatched", dialogState.beneficiariesUnmatched],
+      ])}
     </>
+  );
+
+  renderResetCounters = (dialogState) => (
+    <Box my={1}>
+      <Typography gutterBottom>{this.translate("resetSuccess")}</Typography>
+      <ul>
+        <li>
+          {this.translate("groupsDeleted")}
+          :
+          {" "}
+          {dialogState.groupsDeleted ?? 0}
+        </li>
+        <li>
+          {this.translate("membersDeleted")}
+          :
+          {" "}
+          {dialogState.membersDeleted ?? 0}
+        </li>
+        <li>
+          {this.translate("activitiesDeleted")}
+          :
+          {" "}
+          {dialogState.activitiesDeleted ?? 0}
+        </li>
+        <li>
+          {this.translate("presencesDeleted")}
+          :
+          {" "}
+          {dialogState.presencesDeleted ?? 0}
+        </li>
+      </ul>
+    </Box>
   );
 
   render() {
@@ -430,13 +619,42 @@ export default class SereImportBlock extends Component {
       templateDownloadLoading,
       dialogState,
       inlineError,
+      resetConfirmOpen,
+      resetLoading,
     } = this.state;
 
     return (
       <Grid item xs={4}>
+        <Dialog open={resetConfirmOpen} onClose={this.closeResetConfirm} fullWidth maxWidth="sm">
+          <DialogTitle>{this.translate("resetConfirmTitle")}</DialogTitle>
+          <DialogContent>
+            <Alert severity="warning">
+              {this.translate("resetConfirmMessage")}
+            </Alert>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.closeResetConfirm} disabled={resetLoading}>
+              {this.translate("resetCancel")}
+            </Button>
+            <Button
+              onClick={this.onConfirmReset}
+              variant="contained"
+              color="secondary"
+              disabled={resetLoading}
+            >
+              {resetLoading
+                ? this.translate("resetInProgress")
+                : this.translate("resetConfirm")}
+            </Button>
+          </DialogActions>
+        </Dialog>
         {dialogState.open && (
           <Dialog open onClose={this.closeDialog} fullWidth maxWidth="md">
-            <DialogTitle>{this.translate("title")}</DialogTitle>
+            <DialogTitle>
+              {dialogState.isResetResult
+                ? this.translate("resetConfirmTitle")
+                : this.translate("title")}
+            </DialogTitle>
             <DialogContent>
               <ProgressOrError progress={dialogState.isLoading} />
               {dialogState.dryRun && !dialogState.isLoading && (
@@ -449,20 +667,26 @@ export default class SereImportBlock extends Component {
               )}
               {!dialogState.isLoading && dialogState.success !== null && (
                 <Box my={1}>
-                  <Typography gutterBottom>
-                    {dialogState.success
-                      ? this.translate("success")
-                      : this.translate("failure")}
-                  </Typography>
-                  {dialogState.strategy && (
-                    <Typography variant="caption" display="block" color="textSecondary">
-                      {this.translate("strategyUsed")}
-                      :
-                      {" "}
-                      {this.translate(`strategy${dialogState.strategy}`)}
-                    </Typography>
+                  {dialogState.isResetResult ? (
+                    this.renderResetCounters(dialogState)
+                  ) : (
+                    <>
+                      <Typography gutterBottom>
+                        {dialogState.success
+                          ? this.translate("success")
+                          : this.translate("failure")}
+                      </Typography>
+                      {dialogState.strategy && (
+                        <Typography variant="caption" display="block" color="textSecondary">
+                          {this.translate("strategyUsed")}
+                          :
+                          {" "}
+                          {this.translate(`strategy${dialogState.strategy}`)}
+                        </Typography>
+                      )}
+                      {this.renderImportCounters(dialogState)}
+                    </>
                   )}
-                  {this.renderImportCounters(dialogState)}
                   {dialogState.errors?.length > 0 && (
                     <Box my={1}>
                       <Typography color="error">
@@ -546,6 +770,7 @@ export default class SereImportBlock extends Component {
             </Grid>
             <Grid item>
               <Input
+                inputRef={this.fileInputRef}
                 type="file"
                 accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={this.onFileChange}
@@ -576,16 +801,26 @@ export default class SereImportBlock extends Component {
               />
             </Grid>
             <Grid item>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={this.onImport}
-                disabled={!file || loading || strategy == null || strategy === ""}
-              >
-                {loading
-                  ? this.translate("uploading")
-                  : this.translate("uploadBtn")}
-              </Button>
+              <Box display="flex" style={{ gap: 8 }} flexWrap="wrap">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={this.onImport}
+                  disabled={!file || loading || strategy == null || strategy === ""}
+                >
+                  {loading
+                    ? this.translate("uploading")
+                    : this.translate("uploadBtn")}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={this.openResetConfirm}
+                  disabled={loading || resetLoading}
+                >
+                  {this.translate("resetBtn")}
+                </Button>
+              </Box>
             </Grid>
             {inlineError && (
               <Grid item>
@@ -598,3 +833,5 @@ export default class SereImportBlock extends Component {
     );
   }
 }
+
+export default SereImportBlock;
